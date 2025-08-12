@@ -1,0 +1,183 @@
+;
+                chartTitle = 'Expenses by Category';
+            } else {
+                // Food subcategories chart
+                const foodData = expenseData.totals.Food || {};
+                chartData = [];
+                chartLabels = [];
+                
+                Object.entries(foodData).forEach(([subcat, amount]) => {
+                    if (subcat !== 'total') {
+                        chartLabels.push(subcat);
+                        chartData.push(amount);
+                    }
+                });
+                
+                chartTitle = 'Food Category Breakdown';
+            }
+            
+            // Create new chart
+            currentChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        data: chartData,
+                        backgroundColor: chartColors.slice(0, chartData.length),
+                        borderColor: '#ffffff',
+                        borderWidth: 2,
+                        hoverBorderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: chartTitle,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                bottom: 20
+                            }
+                        },
+                        legend: {
+                            display: false // We'll create custom legend
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                    return `${context.label}: ₹${context.parsed.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 1000
+                    }
+                }
+            });
+            
+            updateChartLegend(chartLabels, chartData);
+        }
+
+        function updateChartLegend(labels, data) {
+            const legendContainer = document.getElementById('chartLegend');
+            let legendHtml = '';
+            
+            labels.forEach((label, index) => {
+                const percentage = ((data[index] / data.reduce((a, b) => a + b, 0)) * 100).toFixed(1);
+                legendHtml += `
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: ${chartColors[index]}"></div>
+                        <span><strong>${label}</strong><br>₹${data[index].toLocaleString('en-IN', {minimumFractionDigits: 2})} (${percentage}%)</span>
+                    </div>
+                `;
+            });
+            
+            legendContainer.innerHTML = legendHtml;
+        }
+
+        function changePeriod(period) {
+            currentPeriod = period;
+            
+            // Update active button
+            document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update period display
+            const periodDisplay = document.getElementById('currentPeriod');
+            switch(period) {
+                case 'current':
+                    periodDisplay.textContent = 'Jul 25 - Aug 25';
+                    break;
+                case 'monthly':
+                    periodDisplay.textContent = 'August 2025';
+                    break;
+                case 'yearly':
+                    periodDisplay.textContent = '2025';
+                    break;
+            }
+        }
+
+        function exportData() {
+            const ws_data = [
+                ['Date', 'Category', 'Subcategory', 'Description', 'Amount']
+            ];
+            
+            // Add recent expenses
+            expenseData.expenses.forEach(expense => {
+                ws_data.push([
+                    expense.date,
+                    expense.category,
+                    expense.subcategory || '',
+                    expense.description || '',
+                    expense.amount
+                ]);
+            });
+            
+            // Add summary
+            ws_data.push(['', '', '', '', '']);
+            ws_data.push(['CATEGORY SUMMARY', '', '', '', '']);
+            
+            Object.entries(expenseData.totals).forEach(([category, amount]) => {
+                if (typeof amount === 'object') {
+                    ws_data.push([category + ' TOTAL', '', '', '', amount.total]);
+                    Object.entries(amount).forEach(([subcat, subAmount]) => {
+                        if (subcat !== 'total') {
+                            ws_data.push(['', subcat, '', '', subAmount]);
+                        }
+                    });
+                } else {
+                    ws_data.push([category, '', '', '', amount]);
+                }
+            });
+            
+            ws_data.push(['', '', '', '', '']);
+            ws_data.push(['TOTAL EXPENSES', '', '', '', expenseData.totalAmount]);
+            ws_data.push(['TOTAL TRANSACTIONS', '', '', '', expenseData.totalTransactions]);
+            
+            downloadCSV(ws_data, 'Personal_Expense_Tracker');
+        }
+
+        function downloadCSV(data, filename) {
+            // Create CSV content
+            const csvContent = data.map(row => 
+                row.map(cell => {
+                    // Handle cells that might contain commas or quotes
+                    if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"') || cell.includes('\n'))) {
+                        return '"' + cell.replace(/"/g, '""') + '"';
+                    }
+                    return cell;
+                }).join(',')
+            ).join('\n');
+            
+            // Create blob and download
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename + '_' + new Date().toISOString().split('T')[0] + '.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+        }
+
+        // Initialize the display
+        updateSummary();
+        updateRecentExpenses();
+        updateChart();
+    </script>
+</body>
+</html>
+                        

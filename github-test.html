@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Pages Deployment Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 600px;
+        }
+        
+        h1 {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 2.5rem;
+        }
+        
+        .status {
+            background: #c6f6d5;
+            color: #22543d;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 1px solid #9ae6b4;
+            font-weight: 600;
+        }
+        
+        .btn {
+            background: #48bb78;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+        
+        .btn.secondary {
+            background: #667eea;
+        }
+        
+        .btn.secondary:hover {
+            background: #5a67d8;
+        }
+        
+        .info {
+            background: #e6fffa;
+            color: #234e52;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #38b2ac;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 GitHub Pages Deployment Successful!</h1>
+        
+        <div class="status">
+            ✅ Your Expense Tracker PWA is live on GitHub Pages!
+        </div>
+        
+        <div class="info">
+            <strong>🔗 Your GitHub Pages URL:</strong><br>
+            <span id="currentUrl"></span>
+        </div>
+        
+        <p>Your enhanced expense tracker is now available worldwide with full PWA functionality!</p>
+        
+        <a href="./index.html" class="btn">🚀 Launch Expense Tracker</a>
+        <a href="./setup.html" class="btn secondary">⚙️ PWA Setup Guide</a>
+        
+        <div style="margin-top: 30px; padding: 20px; background: #f7fafc; border-radius: 10px;">
+            <h3>📱 Install as App:</h3>
+            <p><strong>Mobile:</strong> Open in browser → Add to Home Screen<br>
+            <strong>Desktop:</strong> Look for install button in address bar</p>
+        </div>
+        
+        <div style="margin-top: 20px; font-size: 0.9rem; color: #718096;">
+            <p>🌟 Features: Offline functionality, Real-time sync, Advanced analytics</p>
+            <p>💾 Your data is stored locally and syncs automatically</p>
+        </div>
+    </div>
+    
+    <script>
+        // Display current URL
+        document.getElementById('currentUrl').textContent = window.location.href.replace('/github-test.html', '');
+        
+        // Auto-redirect to main app after 10 seconds
+        setTimeout(() => {
+            window.location.href = './index.html';
+        }, 10000);
+    </script>
+</body>
+</html>

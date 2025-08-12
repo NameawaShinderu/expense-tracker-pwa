@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Expense Tracker</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Track your personal expenses with categories, analytics and offline support">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Expense Tracker">
+    <meta name="msapplication-TileColor" content="#667eea">
+    
+    <!-- PWA Icons -->
+    <link rel="apple-touch-icon" href="icons/icon-152.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="icons/icon-16.png">
+    <link rel="manifest" href="manifest.json">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .connection-status {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #48bb78;
+        }
+
+        .status-indicator.offline {
+            background: #f56565;
+        }
+
+        .period-selector {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .period-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: transparent;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .period-btn.active, .period-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .expense-form-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        .summary-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 20px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            color: #2d3748;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .expense-form {
+            display: grid;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .amount-input {
+            font-size: 1.5rem;
+            font-weight: 700;
+            text-align: center;
+            color: #2d3748;
+        }
+
+        .category-management {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .category-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .add-category-btn, .add-subcategory-btn {
+            padding: 8px 16px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .add-category-btn:hover, .add-subcategory-btn:hover {
+            background: #3182ce;
+            transform: translateY(-1px);
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            border: none;
+            padding: 18px 30px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(72, 187, 120, 0.3);
+        }
+
+        .submit-btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .total-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .total-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .total-label {
+            opacity: 0.9;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .category-breakdown {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #f7fafc;
+            position: relative;
+        }
+
+        .category-item:last-child {
+            border-bottom: none;
+        }
+
+        .category-name {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .category-amount {
+            font-weight: 700;
+            color: #e53e3e;
+        }
+
+        .delete-btn {
+            position: absolute;
+            right: 60px;
+            background: #f56565;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .category-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            background: #e53e3e;
+            transform: scale(1.1);
+        }
+
+        .subcategory-item {
+            margin-left: 20px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .recent-expenses {
+            margin-top: 25px;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .recent-expense-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f7fafc;
+            position: relative;
+        }
+        .chart-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-top: 25px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .chart-tab {
+            padding: 8px 16px;
+            border: 2px solid #e2e8f0;
+            background: white;
+            color: #4a5568;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .chart-tab.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .chart-legend {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.85rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 2px;
+            margin-right: 8px;
+        }
+
+        .expense-details {
+            flex: 1;
+        }
+
+        .expense-description {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 2px;
+        }
+
+        .expense-meta {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .expense-amount {
+            font-weight: 700;
+            color: #e53e3e;
+        }
+
+        .export-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .export-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #805ad5 0%, #6b46c1 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(128, 90, 213, 0.3);
+        }
+
+        .success-message {
+            background: #48bb78;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .success-message.show {
+            opacity: 1;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .close {
+            color: #718096;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: #e53e3e;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 25px;
+        }
+
+        .btn-cancel {
+            padding: 10px 20px;
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-cancel:hover {
+            background: #cbd5e0;
+        }
+
+        .btn-confirm {
+            padding: 10px 20px;
+            background: #e53e3e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-confirm:hover {
+            background: #c53030;
+            transform: translateY(-1px);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #38a169;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 1001;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .notification.error {
+            background: #e53e3e;
+        }
+
+        .notification.warning {
+            background: #ed8936;
+        }
+
+        .bulk-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .bulk-btn {
+            padding: 8px 16px;
+            background: #e53e3e;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .bulk-btn:hover {
+            background: #c53030;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .summary-section {
+                position: static;
+                margin-top: 0;
+            }
+
+            .period-selector {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .period-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .total-amount {
+                font-size: 2rem;
+            }
+
+            .category-actions, .bulk-actions {
+                flex-direction: column;
+            }
+
+            .modal-content {
+                margin: 10% auto;
+                width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="connection-status">
+                <div class="status-indicator" id="connectionStatus"></div>
+                <span id="connectionText">Online</span>
+            </div>
+            <h1>💰 Personal Expense Tracker</h1>
+            <p>Track your spending with ease and insight</p>
+            <div class="period-selector">
+                <button class="period-btn active" onclick="changePeriod('current')">Current Period</button>
+                <button class="period-btn" onclick="changePeriod('monthly')">Monthly View</button>
+                <button class="period-btn" onclick="changePeriod('yearly')">Yearly View</button>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="expense-form-section">
+                <h2 class="section-title">Add New Expense</h2>
+                <form class="expense-form" onsubmit="addExpense(event)">
+                    <div class="form-group">
+                        <label class="form-label">Amount (₹)</label>
+                        <input type="number" class="form-input amount-input" id="amount" placeholder="0.00" step="0.01" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-select" id="category" required onchange="updateSubcategories()">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Subcategory</label>
+                        <select class="form-select" id="subcategory">
+                            <option value="">Select Subcategory</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <input type="text" class="form-input" id="description" placeholder="What did you spend on?">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-input" id="date" required>
+                    </div>
+                    
+                    <div class="category-management">
+                        <h4 style="margin-bottom: 15px; color: #2d3748;">Category Management</h4>
+                        <div class="category-actions">
+                            <button type="button" class="add-category-btn" onclick="showAddCategoryModal()">+ Add Category</button>
+                            <button type="button" class="add-subcategory-btn" onclick="showAddSubcategoryModal()">+ Add Subcategory</button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="submit-btn">Add Expense</button>
+                    <div class="success-message" id="successMessage">Expense added successfully! 🎉</div>
+                </form>
+            </div>
+            <div class="summary-section">
+                <div class="total-card">
+                    <div class="total-amount" id="totalAmount">₹0.00</div>
+                    <div class="total-label">Total Expenses</div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalTransactions">0</div>
+                        <div class="stat-label">Transactions</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="currentPeriod">Current</div>
+                        <div class="stat-label">Period</div>
+                    </div>
+                </div>
+
+                <div class="category-breakdown">
+                    <h3 style="margin-bottom: 15px; color: #2d3748;">Category Breakdown</h3>
+                    <div class="bulk-actions">
+                        <button class="bulk-btn" onclick="showDeleteConfirmModal('all', 'All Expenses')">Delete All</button>
+                        <button class="bulk-btn" onclick="showDeleteConfirmModal('current-month', 'Current Month')">Delete This Month</button>
+                        <button class="bulk-btn" onclick="showDeleteConfirmModal('current-year', 'Current Year')">Delete This Year</button>
+                    </div>
+                    <div id="categoryBreakdown">
+                        <div style="text-align: center; color: #718096; padding: 20px;">
+                            No expenses added yet
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chart-section">
+                    <div class="chart-tabs">
+                        <button class="chart-tab active" onclick="switchChart('category')">By Category</button>
+                        <button class="chart-tab" onclick="switchChart('subcategory')">Subcategories</button>
+                        <button class="chart-tab" onclick="switchChart('monthly')">Monthly Trend</button>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
+                    <div class="chart-legend" id="chartLegend"></div>
+                </div>
+
+                <div class="recent-expenses">
+                    <h3 style="margin-bottom: 15px; color: #2d3748;">Recent Expenses</h3>
+                    <div id="recentExpenses">
+                        <div style="text-align: center; color: #718096; padding: 20px;">
+                            No recent expenses added
+                        </div>
+                    </div>
+                </div>
+
+                <div class="export-section">
+                    <button class="export-btn" onclick="exportData()">
+                        📊 Export Data to CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div id="addCategoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Category</h3>
+                <span class="close" onclick="closeModal('addCategoryModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Category Name</label>
+                <input type="text" class="form-input" id="newCategoryName" placeholder="Enter category name">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal('addCategoryModal')">Cancel</button>
+                <button class="btn-confirm" onclick="addNewCategory()">Add Category</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Subcategory Modal -->
+    <div id="addSubcategoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Add New Subcategory</h3>
+                <span class="close" onclick="closeModal('addSubcategoryModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Select Category</label>
+                <select class="form-select" id="subcategoryParent">
+                    <option value="">Select Category</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Subcategory Name</label>
+                <input type="text" class="form-input" id="newSubcategoryName" placeholder="Enter subcategory name">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal('addSubcategoryModal')">Cancel</button>
+                <button class="btn-confirm" onclick="addNewSubcategory()">Add Subcategory</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirm Delete</h3>
+                <span class="close" onclick="closeModal('deleteModal')">&times;</span>
+            </div>
+            <p id="deleteMessage">Are you sure you want to delete this item?</p>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal('deleteModal')">Cancel</button>
+                <button class="btn-confirm" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Double Confirmation Modal -->
+    <div id="doubleConfirmModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">⚠️ Final Confirmation</h3>
+                <span class="close" onclick="closeModal('doubleConfirmModal')">&times;</span>
+            </div>
+            <p id="doubleConfirmMessage" style="color: #e53e3e; font-weight: 600;">This action cannot be undone!</p>
+            <div class="form-group">
+                <label class="form-label">Type "DELETE" to confirm</label>
+                <input type="text" class="form-input" id="confirmDeleteText" placeholder="Type DELETE">
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-cancel" onclick="closeModal('doubleConfirmModal')">Cancel</button>
+                <button class="btn-confirm" onclick="executeDelete()" id="finalDeleteBtn" disabled>Delete Forever</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification"></div>
+    <script>
+        // PWA and Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                        
+                        // Listen for updates
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    showNotification('App updated! Refresh to see changes.', 'warning');
+                                }
+                            });
+                        });
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+
+        // Listen for service worker messages
+        navigator.serviceWorker?.addEventListener('message', (event) => {
+            if (event.data.type === 'SYNC_COMPLETE') {
+                showNotification(`Synced ${event.data.data.synced} offline expenses`, 'success');
+                loadExpenseData();
+                updateUI();
+            }
+        });
+
+        // Connection status monitoring
+        let isOnline = navigator.onLine;
+        
+        function updateConnectionStatus() {
+            const statusIndicator = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('connectionText');
+            
+            if (isOnline) {
+                statusIndicator.classList.remove('offline');
+                statusText.textContent = 'Online';
+            } else {
+                statusIndicator.classList.add('offline');
+                statusText.textContent = 'Offline';
+            }
+        }
+
+        window.addEventListener('online', () => {
+            isOnline = true;
+            updateConnectionStatus();
+            showNotification('Back online! Syncing data...', 'success');
+            syncOfflineData();
+        });
+
+        window.addEventListener('offline', () => {
+            isOnline = false;
+            updateConnectionStatus();
+            showNotification('You are offline. Data will be saved locally.', 'warning');
+        });
+
+        // IndexedDB setup for offline storage
+        let db;
+        const dbName = 'ExpenseTrackerDB';
+        const dbVersion = 1;
+
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(dbName, dbVersion);
+                
+                request.onerror = () => {
+                    reject(request.error);
+                };
+                
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+                
+                request.onupgradeneeded = (event) => {
+                    db = event.target.result;
+                    
+                    // Create expenses store
+                    if (!db.objectStoreNames.contains('expenses')) {
+                        const expenseStore = db.createObjectStore('expenses', { keyPath: 'id' });
+                        expenseStore.createIndex('date', 'date', { unique: false });
+                        expenseStore.createIndex('category', 'category', { unique: false });
+                    }
+                    
+                    // Create categories store
+                    if (!db.objectStoreNames.contains('categories')) {
+                        db.createObjectStore('categories', { keyPath: 'name' });
+                    }
+                    
+                    // Create offline sync store
+                    if (!db.objectStoreNames.contains('offline_expenses')) {
+                        db.createObjectStore('offline_expenses', { keyPath: 'id' });
+                    }
+                    
+                    // Create settings store
+                    if (!db.objectStoreNames.contains('settings')) {
+                        db.createObjectStore('settings', { keyPath: 'key' });
+                    }
+                };
+            });
+        }
+
+        // Enhanced data structure with better organization and restored sample data
+        let expenseData = {
+            expenses: [
+                // Investment expenses (₹22,131.00)
+                { id: 1629123456001, amount: 5000.00, category: 'Investment', subcategory: 'SIP', description: 'Monthly SIP - HDFC Mutual Fund', date: '2025-08-01', timestamp: '2025-08-01T10:00:00.000Z' },
+                { id: 1629123456002, amount: 3500.00, category: 'Investment', subcategory: 'Stocks', description: 'Bought TCS shares', date: '2025-08-03', timestamp: '2025-08-03T11:30:00.000Z' },
+                { id: 1629123456003, amount: 10000.00, category: 'Investment', subcategory: 'FD', description: 'Fixed Deposit - SBI', date: '2025-07-28', timestamp: '2025-07-28T14:00:00.000Z' },
+                { id: 1629123456004, amount: 2000.00, category: 'Investment', subcategory: 'Mutual Funds', description: 'ELSS Tax Saving Fund', date: '2025-08-05', timestamp: '2025-08-05T09:15:00.000Z' },
+                { id: 1629123456005, amount: 1631.00, category: 'Investment', subcategory: 'Stocks', description: 'Additional stock purchase', date: '2025-08-07', timestamp: '2025-08-07T16:20:00.000Z' },
+                
+                // Rent expenses (₹12,000.00)
+                { id: 1629123456006, amount: 12000.00, category: 'Rent', subcategory: '', description: 'Monthly house rent', date: '2025-08-01', timestamp: '2025-08-01T08:00:00.000Z' },
+                
+                // Food expenses (₹11,340.45) - Resto: ₹7,811.45, Snacks: ₹2,092.00, Chips Cold drink: ₹1,437.00
+                { id: 1629123456007, amount: 850.00, category: 'Food', subcategory: 'Resto', description: 'Dinner at downtown restaurant', date: '2025-08-02', timestamp: '2025-08-02T19:30:00.000Z' },
+                { id: 1629123456008, amount: 320.00, category: 'Food', subcategory: 'Snacks(momos, rolls..)', description: 'Momos and tea', date: '2025-08-02', timestamp: '2025-08-02T17:00:00.000Z' },
+                { id: 1629123456009, amount: 180.00, category: 'Food', subcategory: 'Chips Cold drink', description: 'Cold drinks and chips', date: '2025-08-03', timestamp: '2025-08-03T15:30:00.000Z' },
+                { id: 1629123456010, amount: 1200.00, category: 'Food', subcategory: 'Resto', description: 'Family dinner', date: '2025-08-04', timestamp: '2025-08-04T20:00:00.000Z' },
+                { id: 1629123456011, amount: 450.00, category: 'Food', subcategory: 'Snacks(momos, rolls..)', description: 'Evening snacks', date: '2025-08-04', timestamp: '2025-08-04T18:15:00.000Z' },
+                { id: 1629123456012, amount: 2200.00, category: 'Food', subcategory: 'Resto', description: 'Weekend restaurant visit', date: '2025-08-05', timestamp: '2025-08-05T13:00:00.000Z' },
+                { id: 1629123456013, amount: 380.00, category: 'Food', subcategory: 'Chips Cold drink', description: 'Party snacks', date: '2025-08-05', timestamp: '2025-08-05T16:45:00.000Z' },
+                { id: 1629123456014, amount: 1650.00, category: 'Food', subcategory: 'Resto', description: 'Business lunch', date: '2025-08-06', timestamp: '2025-08-06T12:30:00.000Z' },
+                { id: 1629123456015, amount: 580.00, category: 'Food', subcategory: 'Snacks(momos, rolls..)', description: 'Street food', date: '2025-08-07', timestamp: '2025-08-07T19:00:00.000Z' },
+                { id: 1629123456016, amount: 1931.45, category: 'Food', subcategory: 'Resto', description: 'Special occasion dinner', date: '2025-08-08', timestamp: '2025-08-08T21:00:00.000Z' },
+                { id: 1629123456017, amount: 642.00, category: 'Food', subcategory: 'Snacks(momos, rolls..)', description: 'Quick bite', date: '2025-08-09', timestamp: '2025-08-09T14:20:00.000Z' },
+                { id: 1629123456018, amount: 520.00, category: 'Food', subcategory: 'Chips Cold drink', description: 'Movie snacks', date: '2025-08-09', timestamp: '2025-08-09T18:30:00.000Z' },
+                { id: 1629123456019, amount: 357.00, category: 'Food', subcategory: 'Chips Cold drink', description: 'Office treats', date: '2025-08-10', timestamp: '2025-08-10T11:15:00.000Z' },
+                
+                // Travel expenses (₹3,295.00)
+                { id: 1629123456020, amount: 800.00, category: 'Travel', subcategory: 'Fuel', description: 'Petrol for car', date: '2025-08-01', timestamp: '2025-08-01T07:30:00.000Z' },
+                { id: 1629123456021, amount: 450.00, category: 'Travel', subcategory: 'Public Transport', description: 'Metro and bus tickets', date: '2025-08-02', timestamp: '2025-08-02T08:00:00.000Z' },
+                { id: 1629123456022, amount: 1200.00, category: 'Travel', subcategory: 'Flights', description: 'Domestic flight booking', date: '2025-08-03', timestamp: '2025-08-03T10:45:00.000Z' },
+                { id: 1629123456023, amount: 320.00, category: 'Travel', subcategory: 'Public Transport', description: 'Taxi rides', date: '2025-08-05', timestamp: '2025-08-05T14:20:00.000Z' },
+                { id: 1629123456024, amount: 525.00, category: 'Travel', subcategory: 'Fuel', description: 'Additional fuel', date: '2025-08-07', timestamp: '2025-08-07T18:00:00.000Z' },
+                
+                // Entertainment expenses (₹2,587.00)
+                { id: 1629123456025, amount: 800.00, category: 'Entertainment', subcategory: 'Movies', description: 'Movie tickets for family', date: '2025-08-02', timestamp: '2025-08-02T15:00:00.000Z' },
+                { id: 1629123456026, amount: 599.00, category: 'Entertainment', subcategory: 'Streaming', description: 'Netflix subscription', date: '2025-08-01', timestamp: '2025-08-01T12:00:00.000Z' },
+                { id: 1629123456027, amount: 450.00, category: 'Entertainment', subcategory: 'Games', description: 'Gaming purchases', date: '2025-08-04', timestamp: '2025-08-04T16:30:00.000Z' },
+                { id: 1629123456028, amount: 738.00, category: 'Entertainment', subcategory: 'Events', description: 'Concert tickets', date: '2025-08-06', timestamp: '2025-08-06T19:00:00.000Z' },
+                
+                // Online Purchases expenses (₹1,273.00)
+                { id: 1629123456029, amount: 650.00, category: 'Online Purchases', subcategory: 'Shopping', description: 'Amazon order', date: '2025-08-03', timestamp: '2025-08-03T13:15:00.000Z' },
+                { id: 1629123456030, amount: 399.00, category: 'Online Purchases', subcategory: 'Subscriptions', description: 'Software subscription', date: '2025-08-05', timestamp: '2025-08-05T10:30:00.000Z' },
+                { id: 1629123456031, amount: 224.00, category: 'Online Purchases', subcategory: 'Apps', description: 'Mobile app purchases', date: '2025-08-08', timestamp: '2025-08-08T14:45:00.000Z' }
+            ],
+            categories: {
+                'Food': ['Resto', 'Chips Cold drink', 'Snacks(momos, rolls..)'],
+                'Rent': [],
+                'Investment': ['Stocks', 'Mutual Funds', 'FD', 'SIP'],
+                'Entertainment': ['Movies', 'Games', 'Streaming', 'Events'],
+                'Travel': ['Fuel', 'Public Transport', 'Flights', 'Hotels'],
+                'Online Purchases': ['Shopping', 'Subscriptions', 'Apps']
+            },
+            totals: {},
+            totalAmount: 0,
+            totalTransactions: 0
+        };
+
+        let currentPeriod = 'current';
+        let currentChart = null;
+        let currentChartType = 'category';
+        let deleteOperation = null;
+
+        // Color palette for charts
+        const chartColors = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF',
+            '#4BC0C0', '#36A2EB', '#FFCE56', '#9966FF',
+            '#FF9F67', '#FFCD56', '#36A2EB', '#4BC0C0'
+        ];
+
+        // Initialize application
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await initDB();
+                await loadExpenseData();
+                await loadCategories();
+                setCurrentDate();
+                updateConnectionStatus();
+                updateCategoryDropdown();
+                updateUI();
+                
+                // Setup double confirmation input handler
+                document.getElementById('confirmDeleteText').addEventListener('input', (e) => {
+                    const deleteBtn = document.getElementById('finalDeleteBtn');
+                    deleteBtn.disabled = e.target.value.toUpperCase() !== 'DELETE';
+                });
+                
+                console.log('Application initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize application:', error);
+                showNotification('Failed to initialize app. Please refresh.', 'error');
+            }
+        });
+        // Data persistence functions
+        async function saveExpenseData() {
+            try {
+                if (!db) await initDB();
+                
+                const transaction = db.transaction(['expenses'], 'readwrite');
+                const store = transaction.objectStore('expenses');
+                
+                // Clear existing data
+                await store.clear();
+                
+                // Save all expenses
+                for (const expense of expenseData.expenses) {
+                    await store.add(expense);
+                }
+                
+                // Save to localStorage as backup
+                localStorage.setItem('expenseData', JSON.stringify(expenseData));
+                
+                console.log('Expense data saved successfully');
+            } catch (error) {
+                console.error('Failed to save expense data:', error);
+                // Fallback to localStorage only
+                localStorage.setItem('expenseData', JSON.stringify(expenseData));
+            }
+        }
+
+        async function loadExpenseData() {
+            try {
+                if (!db) await initDB();
+                
+                const transaction = db.transaction(['expenses'], 'readonly');
+                const store = transaction.objectStore('expenses');
+                const request = store.getAll();
+                
+                request.onsuccess = () => {
+                    const expenses = request.result;
+                    if (expenses.length > 0) {
+                        expenseData.expenses = expenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+                        calculateTotals();
+                        console.log('Loaded expenses from IndexedDB:', expenses.length);
+                    } else {
+                        // Try loading from localStorage
+                        const saved = localStorage.getItem('expenseData');
+                        if (saved) {
+                            const parsed = JSON.parse(saved);
+                            expenseData = { ...expenseData, ...parsed };
+                            calculateTotals();
+                            console.log('Loaded expenses from localStorage');
+                        }
+                    }
+                    updateUI();
+                };
+                
+                request.onerror = () => {
+                    console.error('Failed to load from IndexedDB');
+                    // Fallback to localStorage
+                    const saved = localStorage.getItem('expenseData');
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        expenseData = { ...expenseData, ...parsed };
+                        calculateTotals();
+                    }
+                    updateUI();
+                };
+                
+            } catch (error) {
+                console.error('Failed to load expense data:', error);
+                // Fallback to localStorage
+                const saved = localStorage.getItem('expenseData');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    expenseData = { ...expenseData, ...parsed };
+                    calculateTotals();
+                }
+                updateUI();
+            }
+        }
+
+        async function saveCategories() {
+            try {
+                if (!db) await initDB();
+                
+                const transaction = db.transaction(['categories'], 'readwrite');
+                const store = transaction.objectStore('categories');
+                
+                // Clear and save categories
+                await store.clear();
+                for (const [name, subcategories] of Object.entries(expenseData.categories)) {
+                    await store.add({ name, subcategories });
+                }
+                
+                localStorage.setItem('categories', JSON.stringify(expenseData.categories));
+            } catch (error) {
+                console.error('Failed to save categories:', error);
+                localStorage.setItem('categories', JSON.stringify(expenseData.categories));
+            }
+        }
+
+        async function loadCategories() {
+            try {
+                if (!db) await initDB();
+                
+                const transaction = db.transaction(['categories'], 'readonly');
+                const store = transaction.objectStore('categories');
+                const request = store.getAll();
+                
+                request.onsuccess = () => {
+                    const categories = request.result;
+                    if (categories.length > 0) {
+                        expenseData.categories = {};
+                        categories.forEach(cat => {
+                            expenseData.categories[cat.name] = cat.subcategories;
+                        });
+                    } else {
+                        // Try localStorage
+                        const saved = localStorage.getItem('categories');
+                        if (saved) {
+                            expenseData.categories = JSON.parse(saved);
+                        }
+                    }
+                    updateCategoryDropdown();
+                };
+                
+                request.onerror = () => {
+                    const saved = localStorage.getItem('categories');
+                    if (saved) {
+                        expenseData.categories = JSON.parse(saved);
+                    }
+                    updateCategoryDropdown();
+                };
+                
+            } catch (error) {
+                console.error('Failed to load categories:', error);
+                const saved = localStorage.getItem('categories');
+                if (saved) {
+                    expenseData.categories = JSON.parse(saved);
+                }
+                updateCategoryDropdown();
+            }
+        }
+
+        async function saveOfflineExpense(expense) {
+            try {
+                if (!db) await initDB();
+                
+                const transaction = db.transaction(['offline_expenses'], 'readwrite');
+                const store = transaction.objectStore('offline_expenses');
+                await store.add({ ...expense, offline: true, timestamp: Date.now() });
+                
+                console.log('Saved expense for offline sync');
+            } catch (error) {
+                console.error('Failed to save offline expense:', error);
+            }
+        }
+
+        async function syncOfflineData() {
+            if (!isOnline) return;
+            
+            try {
+                // Register background sync if available
+                if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
+                    const registration = await navigator.serviceWorker.ready;
+                    await registration.sync.register('background-sync');
+                }
+            } catch (error) {
+                console.error('Background sync registration failed:', error);
+            }
+        }
+
+        // Calculate totals based on current period
+        function calculateTotals() {
+            const now = new Date();
+            let filteredExpenses = expenseData.expenses;
+            
+            switch (currentPeriod) {
+                case 'monthly':
+                    filteredExpenses = expenseData.expenses.filter(expense => {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate.getMonth() === now.getMonth() && 
+                               expenseDate.getFullYear() === now.getFullYear();
+                    });
+                    break;
+                case 'yearly':
+                    filteredExpenses = expenseData.expenses.filter(expense => {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate.getFullYear() === now.getFullYear();
+                    });
+                    break;
+                case 'current':
+                default:
+                    // Show last 30 days
+                    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+                    filteredExpenses = expenseData.expenses.filter(expense => {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate >= thirtyDaysAgo;
+                    });
+                    break;
+            }
+            
+            // Reset totals
+            expenseData.totals = {};
+            expenseData.totalAmount = 0;
+            expenseData.totalTransactions = filteredExpenses.length;
+            
+            // Calculate category totals
+            filteredExpenses.forEach(expense => {
+                expenseData.totalAmount += expense.amount;
+                
+                if (!expenseData.totals[expense.category]) {
+                    expenseData.totals[expense.category] = { total: 0, subcategories: {} };
+                }
+                
+                expenseData.totals[expense.category].total += expense.amount;
+                
+                if (expense.subcategory) {
+                    if (!expenseData.totals[expense.category].subcategories[expense.subcategory]) {
+                        expenseData.totals[expense.category].subcategories[expense.subcategory] = 0;
+                    }
+                    expenseData.totals[expense.category].subcategories[expense.subcategory] += expense.amount;
+                }
+            });
+        }
+        // UI Helper Functions
+        function setCurrentDate() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        function updateCategoryDropdown() {
+            const categorySelect = document.getElementById('category');
+            const subcategoryParent = document.getElementById('subcategoryParent');
+            
+            // Clear existing options
+            categorySelect.innerHTML = '<option value="">Select Category</option>';
+            subcategoryParent.innerHTML = '<option value="">Select Category</option>';
+            
+            // Add categories
+            Object.keys(expenseData.categories).forEach(category => {
+                const option1 = document.createElement('option');
+                option1.value = category;
+                option1.textContent = category;
+                categorySelect.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = category;
+                option2.textContent = category;
+                subcategoryParent.appendChild(option2);
+            });
+        }
+
+        function updateSubcategories() {
+            const categorySelect = document.getElementById('category');
+            const subcategorySelect = document.getElementById('subcategory');
+            const selectedCategory = categorySelect.value;
+            
+            subcategorySelect.innerHTML = '<option value="">Select Subcategory</option>';
+            
+            if (selectedCategory && expenseData.categories[selectedCategory]) {
+                expenseData.categories[selectedCategory].forEach(subcategory => {
+                    const option = document.createElement('option');
+                    option.value = subcategory;
+                    option.textContent = subcategory;
+                    subcategorySelect.appendChild(option);
+                });
+                subcategorySelect.disabled = false;
+            } else {
+                subcategorySelect.disabled = true;
+            }
+        }
+
+        // Expense Management
+        async function addExpense(event) {
+            event.preventDefault();
+            
+            const amount = parseFloat(document.getElementById('amount').value);
+            const category = document.getElementById('category').value;
+            const subcategory = document.getElementById('subcategory').value;
+            const description = document.getElementById('description').value;
+            const date = document.getElementById('date').value;
+            
+            if (!amount || !category || !date) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            const expense = {
+                id: Date.now(),
+                amount: amount,
+                category: category,
+                subcategory: subcategory,
+                description: description,
+                date: date,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Add to expenses array
+            expenseData.expenses.unshift(expense);
+            
+            try {
+                if (isOnline) {
+                    await saveExpenseData();
+                } else {
+                    await saveOfflineExpense(expense);
+                    showNotification('Expense saved offline. Will sync when online.', 'warning');
+                }
+            } catch (error) {
+                console.error('Failed to save expense:', error);
+                showNotification('Failed to save expense. Please try again.', 'error');
+                return;
+            }
+            
+            // Update UI
+            calculateTotals();
+            updateUI();
+            
+            // Reset form
+            document.getElementById('amount').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('subcategory').innerHTML = '<option value="">Select Subcategory</option>';
+            document.getElementById('subcategory').disabled = true;
+            document.getElementById('description').value = '';
+            setCurrentDate();
+            
+            // Show success message
+            const successMessage = document.getElementById('successMessage');
+            successMessage.classList.add('show');
+            setTimeout(() => {
+                successMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        function deleteExpense(expenseId) {
+            showDeleteConfirmModal('expense', 'This Expense', expenseId);
+        }
+
+        function updateUI() {
+            calculateTotals();
+            updateSummary();
+            updateRecentExpenses();
+            updateChart();
+        }
+
+        function updateSummary() {
+            document.getElementById('totalAmount').textContent = 
+                `₹${expenseData.totalAmount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            document.getElementById('totalTransactions').textContent = expenseData.totalTransactions;
+            
+            // Update period display
+            const periodDisplay = document.getElementById('currentPeriod');
+            const now = new Date();
+            switch(currentPeriod) {
+                case 'current':
+                    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+                    periodDisplay.textContent = `${thirtyDaysAgo.toLocaleDateString()} - ${now.toLocaleDateString()}`;
+                    break;
+                case 'monthly':
+                    periodDisplay.textContent = now.toLocaleDateString('en-IN', { year: 'numeric', month: 'long' });
+                    break;
+                case 'yearly':
+                    periodDisplay.textContent = now.getFullYear().toString();
+                    break;
+            }
+            
+            // Update category breakdown
+            const breakdown = document.getElementById('categoryBreakdown');
+            let html = '';
+            
+            if (Object.keys(expenseData.totals).length === 0) {
+                html = '<div style="text-align: center; color: #718096; padding: 20px;">No expenses added yet</div>';
+            } else {
+                // Sort categories by amount (descending)
+                const sortedCategories = Object.entries(expenseData.totals)
+                    .sort(([,a], [,b]) => b.total - a.total);
+                
+                sortedCategories.forEach(([category, data]) => {
+                    html += `
+                        <div class="category-item">
+                            <span class="category-name">${category}</span>
+                            <button class="delete-btn" onclick="deleteCategoryExpenses('${category}')" title="Delete all ${category} expenses">×</button>
+                            <span class="category-amount">₹${data.total.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                        </div>
+                    `;
+                    
+                    // Add subcategories
+                    if (data.subcategories && Object.keys(data.subcategories).length > 0) {
+                        Object.entries(data.subcategories).forEach(([subcat, amount]) => {
+                            html += `
+                                <div class="category-item subcategory-item">
+                                    <span class="category-name">→ ${subcat}</span>
+                                    <button class="delete-btn" onclick="deleteSubcategoryExpenses('${category}', '${subcat}')" title="Delete all ${subcat} expenses">×</button>
+                                    <span class="category-amount">₹${amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                                </div>
+                            `;
+                        });
+                    }
+                });
+            }
+            
+            breakdown.innerHTML = html;
+        }
+
+        function updateRecentExpenses() {
+            const recentContainer = document.getElementById('recentExpenses');
+            
+            if (expenseData.expenses.length === 0) {
+                recentContainer.innerHTML = `
+                    <div style="text-align: center; color: #718096; padding: 20px;">
+                        No recent expenses added
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            const recentExpenses = expenseData.expenses.slice(0, 10);
+            
+            recentExpenses.forEach(expense => {
+                html += `
+                    <div class="recent-expense-item">
+                        <div class="expense-details">
+                            <div class="expense-description">${expense.description || expense.category}</div>
+                            <div class="expense-meta">${expense.date} • ${expense.category}${expense.subcategory ? ' → ' + expense.subcategory : ''}</div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteExpense(${expense.id})" title="Delete this expense">×</button>
+                        <div class="expense-amount">₹${expense.amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}</div>
+                    </div>
+                `;
+            });
+            
+            recentContainer.innerHTML = html;
+        }
+        // Chart Functions
+        function switchChart(type) {
+            currentChartType = type;
+            
+            // Update active tab
+            document.querySelectorAll('.chart-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            updateChart();
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            
+            // Destroy existing chart
+            if (currentChart) {
+                currentChart.destroy();
+            }
+            
+            let chartData, chartLabels, chartTitle, chartType = 'pie';
+            
+            if (currentChartType === 'category') {
+                // Main categories chart
+                const categoryData = [];
+                const categoryLabels = [];
+                
+                Object.entries(expenseData.totals).forEach(([category, data]) => {
+                    categoryLabels.push(category);
+                    categoryData.push(data.total);
+                });
+                
+                chartData = categoryData;
+                chartLabels = categoryLabels;
+                chartTitle = 'Expenses by Category';
+            } else if (currentChartType === 'subcategory') {
+                // All subcategories chart
+                const subcategoryData = [];
+                const subcategoryLabels = [];
+                
+                Object.entries(expenseData.totals).forEach(([category, data]) => {
+                    if (data.subcategories && Object.keys(data.subcategories).length > 0) {
+                        Object.entries(data.subcategories).forEach(([subcat, amount]) => {
+                            subcategoryLabels.push(`${category} → ${subcat}`);
+                            subcategoryData.push(amount);
+                        });
+                    }
+                });
+                
+                chartData = subcategoryData;
+                chartLabels = subcategoryLabels;
+                chartTitle = 'Expenses by Subcategories';
+            } else if (currentChartType === 'monthly') {
+                // Monthly trend chart
+                chartType = 'line';
+                const monthlyData = {};
+                
+                expenseData.expenses.forEach(expense => {
+                    const expenseDate = new Date(expense.date);
+                    const monthKey = `${expenseDate.getFullYear()}-${String(expenseDate.getMonth() + 1).padStart(2, '0')}`;
+                    
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = 0;
+                    }
+                    monthlyData[monthKey] += expense.amount;
+                });
+                
+                // Sort by date and get last 12 months
+                const sortedMonths = Object.keys(monthlyData).sort().slice(-12);
+                chartLabels = sortedMonths.map(month => {
+                    const [year, monthNum] = month.split('-');
+                    const date = new Date(year, monthNum - 1);
+                    return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'short' });
+                });
+                chartData = sortedMonths.map(month => monthlyData[month]);
+                chartTitle = 'Monthly Spending Trend';
+            }
+            
+            if (chartData.length === 0) {
+                ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                ctx.fillStyle = '#718096';
+                ctx.font = '16px "Segoe UI"';
+                ctx.textAlign = 'center';
+                ctx.fillText('No data available', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
+            
+            // Create new chart
+            const chartConfig = {
+                type: chartType,
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        data: chartData,
+                        backgroundColor: chartType === 'line' ? 'rgba(102, 126, 234, 0.2)' : chartColors.slice(0, chartData.length),
+                        borderColor: chartType === 'line' ? '#667eea' : '#ffffff',
+                        borderWidth: chartType === 'line' ? 3 : 2,
+                        fill: chartType === 'line',
+                        tension: chartType === 'line' ? 0.4 : undefined,
+                        pointBackgroundColor: chartType === 'line' ? '#667eea' : undefined,
+                        pointRadius: chartType === 'line' ? 5 : undefined,
+                        hoverBorderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: chartTitle,
+                            font: {
+                                size: 16,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                bottom: 20
+                            }
+                        },
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    if (chartType === 'line') {
+                                        return `Amount: ₹${context.parsed.y.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+                                    } else {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.parsed / total) * 100).toFixed(1);
+                                        return `${context.label}: ₹${context.parsed.toLocaleString('en-IN', {minimumFractionDigits: 2})} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: chartType === 'line' ? {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '₹' + value.toLocaleString('en-IN');
+                                }
+                            }
+                        }
+                    } : {},
+                    animation: {
+                        animateRotate: chartType !== 'line',
+                        animateScale: chartType === 'line',
+                        duration: 1000
+                    }
+                }
+            };
+            
+            currentChart = new Chart(ctx, chartConfig);
+            
+            if (chartType !== 'line') {
+                updateChartLegend(chartLabels, chartData);
+            } else {
+                document.getElementById('chartLegend').innerHTML = '';
+            }
+        }
+
+        function updateChartLegend(labels, data) {
+            const legendContainer = document.getElementById('chartLegend');
+            let legendHtml = '';
+            
+            labels.forEach((label, index) => {
+                const total = data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? ((data[index] / total) * 100).toFixed(1) : 0;
+                legendHtml += `
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: ${chartColors[index]}"></div>
+                        <span><strong>${label}</strong><br>₹${data[index].toLocaleString('en-IN', {minimumFractionDigits: 2})} (${percentage}%)</span>
+                    </div>
+                `;
+            });
+            
+            legendContainer.innerHTML = legendHtml;
+        }
+
+        // Category Management Functions
+        function showAddCategoryModal() {
+            document.getElementById('addCategoryModal').style.display = 'block';
+            document.getElementById('newCategoryName').focus();
+        }
+
+        function showAddSubcategoryModal() {
+            document.getElementById('addSubcategoryModal').style.display = 'block';
+        }
+
+        async function addNewCategory() {
+            const categoryName = document.getElementById('newCategoryName').value.trim();
+            
+            if (!categoryName) {
+                showNotification('Please enter a category name', 'error');
+                return;
+            }
+            
+            if (expenseData.categories[categoryName]) {
+                showNotification('Category already exists', 'error');
+                return;
+            }
+            
+            expenseData.categories[categoryName] = [];
+            await saveCategories();
+            updateCategoryDropdown();
+            closeModal('addCategoryModal');
+            document.getElementById('newCategoryName').value = '';
+            
+            showNotification(`Category "${categoryName}" added successfully`, 'success');
+        }
+
+        async function addNewSubcategory() {
+            const parentCategory = document.getElementById('subcategoryParent').value;
+            const subcategoryName = document.getElementById('newSubcategoryName').value.trim();
+            
+            if (!parentCategory) {
+                showNotification('Please select a parent category', 'error');
+                return;
+            }
+            
+            if (!subcategoryName) {
+                showNotification('Please enter a subcategory name', 'error');
+                return;
+            }
+            
+            if (expenseData.categories[parentCategory].includes(subcategoryName)) {
+                showNotification('Subcategory already exists', 'error');
+                return;
+            }
+            
+            expenseData.categories[parentCategory].push(subcategoryName);
+            await saveCategories();
+            updateCategoryDropdown();
+            closeModal('addSubcategoryModal');
+            document.getElementById('subcategoryParent').value = '';
+            document.getElementById('newSubcategoryName').value = '';
+            
+            showNotification(`Subcategory "${subcategoryName}" added to "${parentCategory}"`, 'success');
+        }
+        // Delete Functions
+        function showDeleteConfirmModal(type, label, id = null) {
+            deleteOperation = { type, label, id };
+            
+            let message = '';
+            switch (type) {
+                case 'expense':
+                    message = `Are you sure you want to delete this expense?`;
+                    break;
+                case 'all':
+                    message = `Are you sure you want to delete ALL expenses? This will permanently remove all your expense data.`;
+                    break;
+                case 'current-month':
+                    message = `Are you sure you want to delete all expenses from the current month?`;
+                    break;
+                case 'current-year':
+                    message = `Are you sure you want to delete all expenses from the current year?`;
+                    break;
+                case 'category':
+                    message = `Are you sure you want to delete all "${id}" expenses?`;
+                    break;
+                case 'subcategory':
+                    message = `Are you sure you want to delete all "${label}" expenses?`;
+                    break;
+            }
+            
+            document.getElementById('deleteMessage').textContent = message;
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+
+        function confirmDelete() {
+            closeModal('deleteModal');
+            
+            if (deleteOperation.type === 'expense') {
+                // Single expense deletion - no double confirmation needed
+                executeExpenseDelete(deleteOperation.id);
+            } else {
+                // Bulk operations need double confirmation
+                showDoubleConfirmModal();
+            }
+        }
+
+        function showDoubleConfirmModal() {
+            const message = `You are about to delete: ${deleteOperation.label}. This action cannot be undone!`;
+            document.getElementById('doubleConfirmMessage').textContent = message;
+            document.getElementById('confirmDeleteText').value = '';
+            document.getElementById('finalDeleteBtn').disabled = true;
+            document.getElementById('doubleConfirmModal').style.display = 'block';
+        }
+
+        async function executeDelete() {
+            const { type, id, label } = deleteOperation;
+            
+            try {
+                switch (type) {
+                    case 'all':
+                        expenseData.expenses = [];
+                        break;
+                    case 'current-month':
+                        const now = new Date();
+                        expenseData.expenses = expenseData.expenses.filter(expense => {
+                            const expenseDate = new Date(expense.date);
+                            return !(expenseDate.getMonth() === now.getMonth() && 
+                                   expenseDate.getFullYear() === now.getFullYear());
+                        });
+                        break;
+                    case 'current-year':
+                        const currentYear = new Date().getFullYear();
+                        expenseData.expenses = expenseData.expenses.filter(expense => {
+                            const expenseDate = new Date(expense.date);
+                            return expenseDate.getFullYear() !== currentYear;
+                        });
+                        break;
+                    case 'category':
+                        expenseData.expenses = expenseData.expenses.filter(expense => 
+                            expense.category !== id);
+                        break;
+                    case 'subcategory':
+                        expenseData.expenses = expenseData.expenses.filter(expense => 
+                            !(expense.category === id && expense.subcategory === label));
+                        break;
+                }
+                
+                await saveExpenseData();
+                calculateTotals();
+                updateUI();
+                closeModal('doubleConfirmModal');
+                
+                showNotification(`${deleteOperation.label} deleted successfully`, 'success');
+            } catch (error) {
+                console.error('Failed to delete expenses:', error);
+                showNotification('Failed to delete expenses. Please try again.', 'error');
+            }
+        }
+
+        async function executeExpenseDelete(expenseId) {
+            try {
+                expenseData.expenses = expenseData.expenses.filter(expense => expense.id !== expenseId);
+                await saveExpenseData();
+                calculateTotals();
+                updateUI();
+                showNotification('Expense deleted successfully', 'success');
+            } catch (error) {
+                console.error('Failed to delete expense:', error);
+                showNotification('Failed to delete expense. Please try again.', 'error');
+            }
+        }
+
+        function deleteCategoryExpenses(category) {
+            showDeleteConfirmModal('category', `All ${category} expenses`, category);
+        }
+
+        function deleteSubcategoryExpenses(category, subcategory) {
+            showDeleteConfirmModal('subcategory', `All ${subcategory} expenses`, category, subcategory);
+        }
+
+        // Modal Management
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Close modals when clicking outside
+        window.addEventListener('click', (event) => {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+
+        // Period Management
+        function changePeriod(period) {
+            currentPeriod = period;
+            
+            // Update active button
+            document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            updateUI();
+        }
+
+        // Export Functionality
+        function exportData() {
+            const now = new Date();
+            let filteredExpenses = expenseData.expenses;
+            
+            // Filter based on current period
+            switch (currentPeriod) {
+                case 'monthly':
+                    filteredExpenses = expenseData.expenses.filter(expense => {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate.getMonth() === now.getMonth() && 
+                               expenseDate.getFullYear() === now.getFullYear();
+                    });
+                    break;
+                case 'yearly':
+                    filteredExpenses = expenseData.expenses.filter(expense => {
+                        const expenseDate = new Date(expense.date);
+                        return expenseDate.getFullYear() === now.getFullYear();
+                    });
+                    break;
+            }
+            
+            const ws_data = [
+                ['Date', 'Category', 'Subcategory', 'Description', 'Amount']
+            ];
+            
+            // Add expenses
+            filteredExpenses.forEach(expense => {
+                ws_data.push([
+                    expense.date,
+                    expense.category,
+                    expense.subcategory || '',
+                    expense.description || '',
+                    expense.amount
+                ]);
+            });
+            
+            // Add summary
+            ws_data.push(['', '', '', '', '']);
+            ws_data.push(['CATEGORY SUMMARY', '', '', '', '']);
+            
+            Object.entries(expenseData.totals).forEach(([category, data]) => {
+                ws_data.push([category + ' TOTAL', '', '', '', data.total]);
+                if (data.subcategories && Object.keys(data.subcategories).length > 0) {
+                    Object.entries(data.subcategories).forEach(([subcat, amount]) => {
+                        ws_data.push(['', subcat, '', '', amount]);
+                    });
+                }
+            });
+            
+            ws_data.push(['', '', '', '', '']);
+            ws_data.push(['TOTAL EXPENSES', '', '', '', expenseData.totalAmount]);
+            ws_data.push(['TOTAL TRANSACTIONS', '', '', '', expenseData.totalTransactions]);
+            ws_data.push(['PERIOD', '', '', '', currentPeriod.toUpperCase()]);
+            ws_data.push(['EXPORT DATE', '', '', '', now.toLocaleDateString()]);
+            
+            downloadCSV(ws_data, `Expense_Tracker_${currentPeriod}`);
+        }
+
+        function downloadCSV(data, filename) {
+            const csvContent = data.map(row => 
+                row.map(cell => {
+                    if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"') || cell.includes('\n'))) {
+                        return '"' + cell.replace(/"/g, '""') + '"';
+                    }
+                    return cell;
+                }).join(',')
+            ).join('\n');
+            
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            
+            if (link.download !== undefined) {
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', filename + '_' + new Date().toISOString().split('T')[0] + '.csv');
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showNotification('Data exported successfully!', 'success');
+            }
+        }
+
+        // Initialize connection status
+        updateConnectionStatus();
+    </script>
+</body>
+</html>

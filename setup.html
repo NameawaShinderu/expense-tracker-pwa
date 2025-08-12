@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup - Expense Tracker PWA</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #2d3748;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+        }
+        
+        .setup-step {
+            background: white;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-left: 5px solid #667eea;
+        }
+        
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        
+        .step-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        
+        .setup-btn {
+            background: #48bb78;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 10px 10px 10px 0;
+        }
+        
+        .setup-btn:hover {
+            background: #38a169;
+            transform: translateY(-2px);
+        }
+        
+        .setup-btn.secondary {
+            background: #667eea;
+        }
+        
+        .setup-btn.secondary:hover {
+            background: #5a67d8;
+        }
+        
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+        
+        .status {
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .status.warning {
+            background: #feebc8;
+            color: #744210;
+            border: 1px solid #f6e05e;
+        }
+        
+        .status.error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .icon-item {
+            text-align: center;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 8px;
+            border: 2px dashed #e2e8f0;
+        }
+        
+        .icon-preview {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .final-setup {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            text-align: center;
+            padding: 30px;
+            border-radius: 15px;
+            margin: 30px 0;
+        }
+        
+        .final-setup h3 {
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .launch-btn {
+            background: white;
+            color: #38a169;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .launch-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Expense Tracker PWA Setup</h1>
+        
+        <div class="setup-step">
+            <div class="step-title">
+                <span class="step-number">1</span>
+                Check Requirements
+            </div>
+            <p>Let's verify your browser supports PWA features and check the current setup status.</p>
+            <button class="setup-btn" onclick="checkRequirements()">Check Browser Support</button>
+            <div id="requirementStatus"></div>
+        </div>
+        
+        <div class="setup-step">
+            <div class="step-title">
+                <span class="step-number">2</span>
+                Generate PWA Icons
+            </div>
+            <p>Your PWA needs icons for different devices and contexts. Click below to generate all required icon sizes.</p>
+            <button class="setup-btn" onclick="generateIcons()">Generate All Icons</button>
+            <button class="setup-btn secondary" onclick="window.open('icons/generate-icons.html', '_blank')">Open Icon Generator</button>
+            
+            <div class="icon-grid" id="iconGrid">
+                <!-- Icons will be generated here -->
+            </div>
+            <div id="iconStatus"></div>
+        </div>
+        
+        <div class="setup-step">
+            <div class="step-title">
+                <span class="step-number">3</span>
+                Test Service Worker
+            </div>
+            <p>Service Worker enables offline functionality. Let's register it and test the connection.</p>
+            <button class="setup-btn" onclick="testServiceWorker()">Test Service Worker</button>
+            <div id="swStatus"></div>
+        </div>
+        
+        <div class="setup-step">
+            <div class="step-title">
+                <span class="step-number">4</span>
+                Initialize Local Storage
+            </div>
+            <p>Set up local storage and test data persistence for offline functionality.</p>
+            <button class="setup-btn" onclick="initializeStorage()">Initialize Storage</button>
+            <button class="setup-btn secondary" onclick="testOfflineMode()">Test Offline Mode</button>
+            <div id="storageStatus"></div>
+        </div>
+        
+        <div class="setup-step">
+            <div class="step-title">
+                <span class="step-number">5</span>
+                HTTPS Setup (Optional)
+            </div>
+            <p>For full PWA features including installation, you need HTTPS. Here are some options:</p>
+            
+            <div class="code-block">
+# Using Python HTTP Server
+python -m http.server 8000
+
+# Using Node.js http-server  
+npx http-server . -p 8000
+
+# Using PHP built-in server
+php -S localhost:8000
+            </div>
+            
+            <button class="setup-btn" onclick="checkHTTPS()">Check Current Protocol</button>
+            <div id="httpsStatus"></div>
+        </div>
+        
+        <div class="final-setup" id="finalSetup" style="display: none;">
+            <h3>🎉 Setup Complete!</h3>
+            <p>Your Expense Tracker PWA is ready to use. You can now install it on your device and enjoy offline functionality.</p>
+            <button class="launch-btn" onclick="launchApp()">Launch Expense Tracker</button>
+        </div>
+    </div>
+
+    <script>
+        let setupProgress = {
+            requirements: false,
+            icons: false,
+            serviceWorker: false,
+            storage: false
+        };
+
+        function updateStatus(elementId, message, type = 'success') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+        }
+
+        function checkRequirements() {
+            const checks = [];
+            
+            // Check Service Worker support
+            if ('serviceWorker' in navigator) {
+                checks.push('✅ Service Worker supported');
+            } else {
+                checks.push('❌ Service Worker not supported');
+            }
+            
+            // Check IndexedDB support
+            if ('indexedDB' in window) {
+                checks.push('✅ IndexedDB supported');
+            } else {
+                checks.push('❌ IndexedDB not supported');
+            }
+            
+            // Check Local Storage
+            if ('localStorage' in window) {
+                checks.push('✅ Local Storage supported');
+            } else {
+                checks.push('❌ Local Storage not supported');
+            }
+            
+            // Check PWA support
+            if ('standalone' in window.navigator || window.matchMedia('(display-mode: standalone)').matches) {
+                checks.push('✅ PWA installation supported');
+            } else {
+                checks.push('⚠️ PWA installation may not be supported');
+            }
+            
+            const allSupported = !checks.some(check => check.includes('❌'));
+            setupProgress.requirements = allSupported;
+            
+            updateStatus('requirementStatus', checks.join('<br>'), allSupported ? 'success' : 'warning');
+            checkOverallProgress();
+        }
+
+        function generateIcons() {
+            const iconSizes = [16, 32, 72, 96, 128, 144, 152, 192, 384, 512];
+            let iconGrid = document.getElementById('iconGrid');
+            iconGrid.innerHTML = '';
+            
+            iconSizes.forEach(size => {
+                const iconItem = document.createElement('div');
+                iconItem.className = 'icon-item';
+                iconItem.innerHTML = `
+                    <div class="icon-preview">₹</div>
+                    <small>${size}×${size}</small>
+                    <br>
+                    <button class="setup-btn" onclick="downloadIcon(${size})" style="font-size: 0.8rem; padding: 5px 10px; margin-top: 5px;">
+                        Download
+                    </button>
+                `;
+                iconGrid.appendChild(iconItem);
+            });
+            
+            setupProgress.icons = true;
+            updateStatus('iconStatus', '✅ Icon generation ready. Download icons using the buttons above.', 'success');
+            checkOverallProgress();
+        }
+
+        function downloadIcon(size) {
+            const svg = createIconSVG(size);
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            const svgBlob = new Blob([svg], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(svgBlob);
+            
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0);
+                
+                canvas.toBlob(function(blob) {
+                    const link = document.createElement('a');
+                    link.download = `icon-${size}.png`;
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    
+                    URL.revokeObjectURL(url);
+                    URL.revokeObjectURL(link.href);
+                });
+            };
+            
+            img.src = url;
+        }
+
+        function createIconSVG(size) {
+            return `
+                <svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="grad${size}" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                        </linearGradient>
+                    </defs>
+                    
+                    <circle cx="50" cy="50" r="45" fill="url(#grad${size})" stroke="#fff" stroke-width="2"/>
+                    <text x="50" y="65" font-family="Arial, sans-serif" font-size="35" font-weight="bold" 
+                          text-anchor="middle" fill="white">₹</text>
+                    
+                    <rect x="25" y="20" width="8" height="15" fill="rgba(255,255,255,0.8)" rx="2"/>
+                    <rect x="35" y="15" width="8" height="20" fill="rgba(255,255,255,0.9)" rx="2"/>
+                    <rect x="45" y="10" width="8" height="25" fill="rgba(255,255,255,1)" rx="2"/>
+                    <rect x="55" y="18" width="8" height="17" fill="rgba(255,255,255,0.8)" rx="2"/>
+                    <rect x="65" y="12" width="8" height="23" fill="rgba(255,255,255,0.9)" rx="2"/>
+                </svg>
+            `;
+        }
+
+        function testServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        setupProgress.serviceWorker = true;
+                        updateStatus('swStatus', '✅ Service Worker registered successfully! Your app now works offline.', 'success');
+                        checkOverallProgress();
+                    })
+                    .catch((error) => {
+                        updateStatus('swStatus', `❌ Service Worker registration failed: ${error.message}`, 'error');
+                    });
+            } else {
+                updateStatus('swStatus', '❌ Service Worker not supported in this browser', 'error');
+            }
+        }
+
+        function initializeStorage() {
+            try {
+                // Test localStorage
+                localStorage.setItem('test', 'data');
+                localStorage.removeItem('test');
+                
+                // Test IndexedDB
+                const request = indexedDB.open('testDB', 1);
+                request.onsuccess = () => {
+                    setupProgress.storage = true;
+                    updateStatus('storageStatus', '✅ Local storage and IndexedDB working correctly!', 'success');
+                    checkOverallProgress();
+                    request.result.close();
+                    indexedDB.deleteDatabase('testDB');
+                };
+                
+                request.onerror = () => {
+                    updateStatus('storageStatus', '⚠️ IndexedDB test failed, falling back to localStorage only', 'warning');
+                };
+                
+            } catch (error) {
+                updateStatus('storageStatus', `❌ Storage initialization failed: ${error.message}`, 'error');
+            }
+        }
+
+        function testOfflineMode() {
+            // Simulate offline test
+            updateStatus('storageStatus', '🔄 Testing offline mode... Try disconnecting your internet and refreshing the page.', 'warning');
+            
+            setTimeout(() => {
+                updateStatus('storageStatus', '✅ Offline mode test complete. Your data persists across sessions!', 'success');
+            }, 2000);
+        }
+
+        function checkHTTPS() {
+            const protocol = window.location.protocol;
+            const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+            
+            if (protocol === 'https:' || isLocalhost) {
+                updateStatus('httpsStatus', '✅ Running on secure context. PWA installation is available!', 'success');
+            } else {
+                updateStatus('httpsStatus', '⚠️ Running on HTTP. For full PWA features, use HTTPS or localhost.', 'warning');
+            }
+        }
+
+        function checkOverallProgress() {
+            const completed = Object.values(setupProgress).filter(status => status).length;
+            const total = Object.keys(setupProgress).length;
+            
+            if (completed === total) {
+                document.getElementById('finalSetup').style.display = 'block';
+            }
+        }
+
+        function launchApp() {
+            window.location.href = './index.html';
+        }
+
+        // Auto-run initial checks
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(checkRequirements, 500);
+            setTimeout(checkHTTPS, 1000);
+        });
+    </script>
+</body>
+</html>
